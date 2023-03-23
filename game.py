@@ -1,10 +1,14 @@
 import socket
+import copy
 import errno
 import time
 import os
+import pickle
 from colorama import Fore,Style
 
 GAME_PORT = 6005
+HEADERSIZE = 10
+
 # participating clients must use this port for game communication
 
 
@@ -12,15 +16,17 @@ GAME_PORT = 6005
 
 ################## PLAYER FUNCTIONS ##################
 
-pl_grid={'A': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'B': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'C': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'D': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'E': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'F': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'G': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'H': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'I': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'J': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']}
-lost_playergrid= {}
-def lost_plgrid(grid):
-   for i in range (65,75):
-      for j in range (0,10):
-         if grid[chr(i)][j] == "#":
-            lost_playergrid[chr(i)][j]='X'
-         else:
-            lost_playergrid[chr(i)][j]=' '
+# pl_grid={'A': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'B': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'C': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'D': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'E': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'F': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'G': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'H': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'I': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 'J': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']}
+pl_grid={1: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 2: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 3: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 4: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 5: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 6: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 7: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 8: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 9: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 10: [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']}
+opp_grid={}
+lost_playergrid={}
+
+def lost_plgrid(gridy):
+  for i in range (10):
+    for j in range (10):
+        # if gridy[chr(c+i)][j] == "#":
+        if gridy[i+1][j] == "#":           
+          gridy[i+1][j]= "X"
             
 def player_grid():
     global pl_grid
@@ -33,12 +39,17 @@ def player_grid():
     for i in range(10):
         print(f"{chr(c+i)} ", end='')
         for j in range(10):
-            if pl_grid[chr(c+i)][j] == "#":
-              print(Fore.GREEN+f"| {pl_grid[chr(c+i)][j]} ", end='')  
-            elif pl_grid[chr(c+i)][j] == "X":
-              print(Fore.RED+f"| {pl_grid[chr(c+i)][j]} ", end='')
+            # if pl_grid[chr(c+i)][j] == "#":
+            if pl_grid[i+1][j] == "#":  
+              # print(Fore.GREEN+f"| {pl_grid[chr(c+i)][j]} ", end='')  
+              print(Fore.GREEN+f"| {pl_grid[i+1][j]} ", end='')
+            # elif pl_grid[chr(c+i)][j] == "X":
+            elif pl_grid[i+1][j] == "X":
+              # print(Fore.RED+f"| {pl_grid[chr(c+i)][j]} ", end='')
+              print(Fore.RED+f"| {pl_grid[i+1][j]} ", end='')
             else:
-              print(Style.RESET_ALL+f"| {pl_grid[chr(c+i)][j]} ", end='')              
+              # print(Style.RESET_ALL+f"| {pl_grid[chr(c+i)][j]} ", end='')
+              print(Style.RESET_ALL+f"| {pl_grid[i+1][j]} ", end='')                   
         print(Style.RESET_ALL+"| ")
         print(Style.RESET_ALL+"  ", (10*4)*"-")
     print(Style.RESET_ALL+"\n")   
@@ -51,10 +62,13 @@ def mark_ships(crd):
     for i in range (crd[1],crd[3]+1):
       update_playergrid("#",crd[0],i)
   elif crd[1]==crd[3]:
-    for i in range (ord(crd[0]),ord(crd[2])+1):
-      update_playergrid("#",chr(i),crd[1])
+    # for i in range (ord(crd[0]),ord(crd[2])+1):
+    for i in range (crd[0],crd[2]+1):
+      # update_playergrid("#",chr(i),crd[1])
+      update_playergrid("#",i,crd[1])
+
   else:
-     print("error")
+    print("error")
   os.system('cls')   
   print("Your grid:\n")
   player_grid()  
@@ -70,10 +84,10 @@ def print_grids():
 
 def twoship():
   as2x, as2y,ae2x,ae2y= input("2 block ship A:").split()
-  crd2A= [as2x, int(as2y),ae2x,int(ae2y)]
+  crd2A= [ord(as2x)-64, int(as2y),ord(ae2x)-64,int(ae2y)]
   mark_ships(crd2A)
   bs2x,bs2y,be2x,be2y= input("2 block ship B:").split()
-  crd2B=[bs2x,int(bs2y),be2x,int(be2y)]
+  crd2B=[ord(bs2x)-64,int(bs2y),ord(be2x)-64,int(be2y)]
   mark_ships(crd2B)
 
   global coord_2
@@ -81,13 +95,13 @@ def twoship():
 
 def threeship(): 
   as3x, as3y,ae3x,ae3y= input("3 block ship A:").split()
-  crd3A= [as3x, int(as3y),ae3x,int(ae3y)]
+  crd3A= [ord(as3x)-64, int(as3y),ord(ae3x)-64,int(ae3y)]
   mark_ships(crd3A)
   bs3x,bs3y,be3x,be3y= input("3 block ship B:").split()
-  crd3B=[bs3x,int(bs3y),be3x,int(be3y)]
+  crd3B=[ord(bs3x)-64,int(bs3y),ord(be3x)-64,int(be3y)]
   mark_ships(crd3B)
   cs3x,cs3y,ce3x,ce3y= input("3 block ship C:").split()
-  crd3C=[cs3x,int(cs3y),ce3x,int(ce3y)]
+  crd3C=[ord(cs3x)-64,int(cs3y),ord(ce3x)-64,int(ce3y)]
   mark_ships(crd3C)
 
   global coord_3
@@ -95,7 +109,7 @@ def threeship():
 
 def fourship():
   as4x, as4y,ae4x,ae4y= input("4 block ship A:").split()
-  crd4A= [as4x, int(as4y),ae4x,int(ae4y)]
+  crd4A= [ord(as4x)-64, int(as4y),ord(ae4x)-64,int(ae4y)]
   mark_ships(crd4A)
 
   global coord_4
@@ -103,7 +117,7 @@ def fourship():
 
 def fiveship():
   as5x, as5y,ae5x,ae5y= input("5 block ship A:").split()
-  crd5= [as5x, int(as5y),ae5x,int(ae5y)]
+  crd5= [ord(as5x)-64, int(as5y),ord(ae5x)-64,int(ae5y)]
   mark_ships(crd5)
 
   global coord_5
@@ -126,10 +140,13 @@ def set_grid():
   # threeship()
   fourship()
   # fiveship()
-  lost_plgrid(pl_grid)
+  global lost_playergrid
+  lost_playergrid= copy.deepcopy(pl_grid)
+  lost_plgrid(lost_playergrid)
 
 def lose(grid):
   flag=0
+  global lost_playergrid
   for i in 10:
     for j in 10:
        if grid[i][j]== "X":
@@ -158,10 +175,10 @@ def oppo_grid():
     for i in range(10):
         print(f"{chr(c+i)} ", end='')
         for j in range(10):
-            if opp_grid[chr(c+i)][j] == "X":
-              print(Fore.RED+f"| {opp_grid[chr(c+i)][j]} ", end='')
+            if opp_grid[i+1][j] == "X":
+              print(Fore.RED+f"| {opp_grid[i+1][j]} ", end='')
             else:
-              print(Style.RESET_ALL+f"| {opp_grid[chr(c+i)][j]} ", end='')              
+              print(Style.RESET_ALL+f"| {opp_grid[i+1][j]} ", end='')              
         print(Style.RESET_ALL+"| ")
         print(Style.RESET_ALL+"  ", (10*4)*"-")
     print(Style.RESET_ALL+"\n")
@@ -170,14 +187,14 @@ def update_oppgrid(move,row,col):
   opp_grid[row][col-1]=move  
 
 def lost_oppogrid(grid):
-   for i in range (65,75):
-      for j in range (0,10):
-         if grid[chr(i)][j] == "#":
-            lost_oppgrid[chr(i)][j]='X'
-         else:
-            lost_oppgrid[chr(i)][j]=' '
+   for i in (65,75):
+      for j in range (10):
+         if grid[i+1][j]== "#":
+            grid[i+1][j]= "X"
 
 def attack_on_opp(pl_move):
+  print(pl_move)
+  global opp_grid
   if opp_grid[pl_move[0]][pl_move[1]] == "#":
     update_oppgrid("X",pl_move[0],pl_move[1])
     print_grids()
@@ -223,14 +240,45 @@ def game_server(after_connect):
       with game_socket:
         after_connect()
         set_grid()
-        game_socket.send(pl_grid.encode())
-        opp_grid = game_socket.recv(1024).decode()
-        lost_plgrid(opp_grid)
+
+        msg = pickle.dumps(pl_grid)
+        msg = bytes(f"{len(msg):<{HEADERSIZE}}", 'utf-8')+msg
+        game_socket.send(msg)
+      
+        full_msg = b''
+        new_msg = True
+        msg = game_socket.recv(1024)
+        if new_msg:
+          msglen = int(msg[:HEADERSIZE])
+          new_msg = False
+
+        full_msg += msg
+
+        if len(full_msg)-HEADERSIZE == msglen:
+          opp_grid=pickle.loads(full_msg[HEADERSIZE:])
+          new_msg = True
+          full_msg = b""
+        
         print("Game started")
 
         while True:
           print("Opponents turn")
-          opp_move = game_socket.recv(1024).decode()
+
+          full_msg = b''
+          new_msg = True
+          msg = game_socket.recv(1024)
+          if new_msg:
+            msglen = int(msg[:HEADERSIZE])
+            new_msg = False
+
+          full_msg += msg
+
+          if len(full_msg)-HEADERSIZE == msglen:
+            opp_move=pickle.loads(full_msg[HEADERSIZE:])
+            new_msg = True
+            full_msg = b""        
+          # opp_move = game_socket.recv(1024)
+          print(opp_move)
           if not opp_move:
             break
           attack_on_pl(opp_move)
@@ -251,16 +299,38 @@ def game_client(opponent):
       game_socket.connect((opponent, GAME_PORT))
       
       set_grid()
-      opp_grid = game_socket.recv(1024).decode()
-      game_socket.send(pl_grid.encode())
-      lost_plgrid(opp_grid)
+      
+      full_msg = b''
+      new_msg = True
+      msg = game_socket.recv(1024)
+      if new_msg:
+        msglen = int(msg[:HEADERSIZE])
+        new_msg = False
+
+      full_msg += msg
+
+      if len(full_msg)-HEADERSIZE == msglen:
+        opp_grid=pickle.loads(full_msg[HEADERSIZE:])
+        new_msg = True
+        full_msg = b""
+
+      msg = pickle.dumps(pl_grid)
+      msg = bytes(f"{len(msg):<{HEADERSIZE}}", 'utf-8')+msg
+      game_socket.send(msg)
+
       print('Game Started')
 
       while True:
         print("Your turn")
-        pl_move = [int(x) for x in input("Enter coordinates to strike: ").split()] 
+        x,y =input("Enter coordinates to strike: ").split()
+        pl_move=[ord(x)-64,int(y)]
+        print(pl_move[0],pl_move[1])
         attack_on_opp(pl_move)
-        game_socket.send(pl_move.encode())
+
+        msg = pickle.dumps(pl_grid)
+        msg = bytes(f"{len(msg):<{HEADERSIZE}}", 'utf-8')+msg
+        game_socket.send(msg)  
+        print("move sent")       
         if win(opp_grid):
             break
       
